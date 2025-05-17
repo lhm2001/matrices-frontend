@@ -1,59 +1,70 @@
 import React, { useState } from 'react';
 
 const App = () => {
+  
   const [matrixInput, setMatrixInput] = useState('');
   const [Q, setQ] = useState([]);
   const [R, setR] = useState([]);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [authToken, setAuthToken] = useState('');
 
+  const getToken = async () => {
+    const response = await fetch('https://rm6ijm34sa.execute-api.us-east-2.amazonaws.com/token');
+    if (!response.ok) throw new Error('Error al obtener token');
+    const data = await response.json();
+    return `Bearer ${data.access_token}`;
+  };
+
+  const fetchQR = async (matrix, token) => {
+    const response = await fetch('https://rm6ijm34sa.execute-api.us-east-2.amazonaws.com/matrix', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token,
+      },
+      body: JSON.stringify({ matrix }),
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error('Error al calcular Q y R');
+    return await response.json();
+  };
+
+  const fetchStats = async (Q, R, token) => {
+    const response = await fetch('https://z4wy7bpxsf.execute-api.us-east-2.amazonaws.com/process', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: token,
+      },
+      body: JSON.stringify({ Q, R }),
+      credentials: 'include',
+    });
+
+    if (!response.ok) throw new Error('Error al calcular estadísticas');
+    return await response.json();
+  };
 
   const handleProcess = async () => {
     setLoading(true);
     setError('');
+
     try {
-
-      const tokenRes = await fetch('https://rm6ijm34sa.execute-api.us-east-2.amazonaws.com/token');
-      if (!tokenRes.ok) throw new Error('Error al obtener token');
-      const tokenData = await tokenRes.json();
-      const token = `Bearer ${tokenData.access_token}`;
-
-      setAuthToken(token);
-
+      const token = await getToken();
       const parsedMatrix = JSON.parse(matrixInput);
 
-      const res1 = await fetch('https://rm6ijm34sa.execute-api.us-east-2.amazonaws.com/matrix', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token
-        },
-        body: JSON.stringify({ matrix: parsedMatrix }),
-        credentials: 'include'
-      });
-
-      const { Q, R } = await res1.json();
+      const { Q, R } = await fetchQR(parsedMatrix, token);
       setQ(Q);
       setR(R);
 
-      const res2 = await fetch('https://z4wy7bpxsf.execute-api.us-east-2.amazonaws.com/process', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token,
-        },
-        body: JSON.stringify({ Q, R }),
-        credentials: 'include'
-      });
-
-      const data2 = await res2.json();
-      setStats(data2);
+      const stats = await fetchStats(Q, R, token);
+      setStats(stats);
     } catch (err) {
       console.error(err);
       setError('Error al procesar la matriz. Asegúrate de ingresar una matriz válida.');
     }
+
     setLoading(false);
   };
 
