@@ -10,14 +10,14 @@ const App = () => {
   const [loading, setLoading] = useState(false);
 
   const getToken = async () => {
-    const response = await fetch('https://rm6ijm34sa.execute-api.us-east-2.amazonaws.com/token');
+    const response = await fetch(`${import.meta.env.VITE_APP_MATRIX_URL}/token`);
     if (!response.ok) throw new Error('Error al obtener token');
     const data = await response.json();
     return `Bearer ${data.access_token}`;
   };
 
   const fetchQR = async (matrix, token) => {
-    const response = await fetch('https://rm6ijm34sa.execute-api.us-east-2.amazonaws.com/matrix', {
+    const response = await fetch(`${import.meta.env.VITE_APP_MATRIX_URL}/matrix`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -32,7 +32,7 @@ const App = () => {
   };
 
   const fetchStats = async (Q, R, token) => {
-    const response = await fetch('https://z4wy7bpxsf.execute-api.us-east-2.amazonaws.com/process', {
+    const response = await fetch(`${import.meta.env.VITE_APP_PROCESS_URL}/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
